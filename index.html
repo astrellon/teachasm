@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>Assembler JS</title>
+    <script src="src/jquery-3.1.1.js"></script>
+    <script src="src/SimpleCpu.js"></script>
+    <script src="src/SimpleCpuAssembler.js"></script>
+    <script src="app.js"></script>
+
+  <style>
+    .test-text {
+      visibility: hidden;
+      width: auto;
+      height: auto;
+      display: inline;
+    }
+  </style>
+  </head>
+  <body>
+    <h1>Assembler</h1>
+    <div class="texteditor">
+      <textarea class="js-texteditor" cols="30" rows="10"></textarea>
+    </div>
+    <div class="main-controls">
+      <button class="js-assemble">Assemble</button>
+      <button class="js-run">Run</button>
+      <button class="js-one-step">One Step</button>
+      <button class="js-reset">Reset</button>
+    </div>
+    <div class="debug">
+      <div>
+        <span>Program Counter: </span><span class="js-program-counter"></span>
+      </div>
+      <pre class="js-input test-text">M</pre>
+      <pre class="js-registers"></pre>
+      <pre class="js-memory"></pre>
+    </div>
+    
+  </body>
+</html>
