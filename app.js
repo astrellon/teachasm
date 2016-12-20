@@ -3,6 +3,8 @@
     'use strict';
 
     let cpu = null;
+    let textWidth = 0;
+    let textHeight = 0;
 
     function init()
     {
@@ -26,10 +28,10 @@
         $('.js-reset').on('click', onResetClick);
 
         let $testText = $('.js-input');
-        let width = $testText.width();
-        let height = $testText.height();
-        console.log('Size: ', width, height);
-        $testText.removeClass('test-text');
+        textWidth = $testText.width();
+        textHeight = $testText.height();
+        console.log('Size: ', textWidth, textHeight);
+        $testText.removeClass('test-text').text('');
     }
 
     function onTextChange(e)
@@ -68,8 +70,21 @@
     function updateDisplay()
     {
         $('.js-registers').html(getRegisterDisplay());
-        $('.js-input').html(getInputDisplay());
         $('.js-program-counter').text(cpu.getProgramCounter());
+
+        let pos = calcProgramCounterTextPosition();
+        let posOffset = calcProgramCounterTextPositionOffset();
+        $('.js-input').css('top', pos);
+        $('.js-input-line').css('top', posOffset);
+    }
+
+    function calcProgramCounterTextPositionOffset()
+    {
+        return textHeight * 5;
+    }
+    function calcProgramCounterTextPosition()
+    {
+        return -textHeight * (cpu.getProgramCounter()) + calcProgramCounterTextPositionOffset();
     }
 
     function getInputDisplay()
@@ -78,20 +93,22 @@
         let result = '';
         let pc = cpu.getProgramCounter();
 
-        let start = Math.max(pc - 10, 0);
-        let end = Math.min(pc + 10, input.length);
+        //let start = Math.max(pc - 10, 0);
+        //let end = Math.min(pc + 10, input.length);
+        let start = 0;
+        let end = input.length;
         for (let i = start; i < end; i++)
         {
             result += i + ': ' + formatHex(input[i]);
             if (i === pc)
             {
-                result += ' <-- PC';
+                //result += ' <-- PC';
             }
             result += '<br/>';
         }
         if (pc >= input.length)
         {
-            result += '<-- PC at end';
+            //result += '<-- PC at end';
         }
         return result;
     }

@@ -13,6 +13,24 @@
       height: auto;
       display: inline;
     }
+
+    .input-container {
+      width: 500px;
+      height: 200px;
+      overflow: hidden;
+      position: relative;
+    }
+    .input-container>pre {
+      position: absolute;
+      transition: top 0.2s ease-in-out, left 0.2s ease-in-out;
+    }
+    .input-container>.line {
+      position: absolute;
+      width: 100%;
+      display: block;
+      border: 2px solid red;
+      margin-top: 1.6em;
+    }
   </style>
   </head>
   <body>
@@ -30,7 +48,10 @@
       <div>
         <span>Program Counter: </span><span class="js-program-counter"></span>
       </div>
-      <pre class="js-input test-text">M</pre>
+      <div class="js-input-container input-container">
+        <pre class="js-input test-text">M</pre>
+        <span class="line js-input-line"></span>
+      </div>
       <pre class="js-registers"></pre>
       <pre class="js-memory"></pre>
     </div>
