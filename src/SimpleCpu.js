@@ -1,39 +1,43 @@
 ;(function()
 {
-    var opCodeCounter = 0;
+    let opCodeCounter = 0;
 
-    var moveRI = ++opCodeCounter;
-    var moveRR = ++opCodeCounter;
+    let moveRI = ++opCodeCounter;
+    let moveRR = ++opCodeCounter;
 
-    var moveRP = ++opCodeCounter;
-    var movePR = ++opCodeCounter;
+    let moveRP = ++opCodeCounter;
+    let movePR = ++opCodeCounter;
 
-    var addRI = ++opCodeCounter;
-    var addRR = ++opCodeCounter;
-    
-    var subtractRI = ++opCodeCounter;
-    var subtractRR = ++opCodeCounter;
-    
-    var multiplyRI = ++opCodeCounter;
-    var multiplyRR = ++opCodeCounter;
-    
-    var compareRI = ++opCodeCounter;
-    var compareRR = ++opCodeCounter;
-    
-    var jumpL = ++opCodeCounter;
-    var jumpEqualsL = ++opCodeCounter;
-    var jumpNotEqualsL = ++opCodeCounter;
-    var jumpLessThanL = ++opCodeCounter;
-    var jumpLessThanEqualL = ++opCodeCounter;
-    var jumpGreaterThanL = ++opCodeCounter;
-    var jumpGreaterThanEqualL = ++opCodeCounter;
-    
-    var callL = ++opCodeCounter;
-    var returnV = ++opCodeCounter;
+    let moveRPB = ++opCodeCounter;
+    let movePRB = ++opCodeCounter;
 
-    var opCodes = {
+    let addRI = ++opCodeCounter;
+    let addRR = ++opCodeCounter;
+    
+    let subtractRI = ++opCodeCounter;
+    let subtractRR = ++opCodeCounter;
+    
+    let multiplyRI = ++opCodeCounter;
+    let multiplyRR = ++opCodeCounter;
+    
+    let compareRI = ++opCodeCounter;
+    let compareRR = ++opCodeCounter;
+    
+    let jumpL = ++opCodeCounter;
+    let jumpEqualsL = ++opCodeCounter;
+    let jumpNotEqualsL = ++opCodeCounter;
+    let jumpLessThanL = ++opCodeCounter;
+    let jumpLessThanEqualL = ++opCodeCounter;
+    let jumpGreaterThanL = ++opCodeCounter;
+    let jumpGreaterThanEqualL = ++opCodeCounter;
+    
+    let callL = ++opCodeCounter;
+    let returnV = ++opCodeCounter;
+
+    let opCodes = {
         moveRI, moveRR, 
         moveRP, movePR,
+        moveRPB, movePRB,
 
         addRI, addRR,
         subtractRI, subtractRR,
@@ -50,6 +54,8 @@
         returnV
     };
 
+    Object.preventExtensions(opCodes);
+
     function SimpleCpu()
     {
         this.programCounter = 0;
@@ -63,11 +69,15 @@
 
     SimpleCpu.opCodes = opCodes;
 
-    var fn = SimpleCpu.prototype;
-    fn.init = function(memorySize, registerSize)
+    let fn = SimpleCpu.prototype;
+    fn.init = function(numMemoryBanks, memorySize, registerSize)
     {
         this.programCounter = 0;
-        this.memory = new Uint8Array(memorySize);
+        this.memory = new Array(numMemoryBanks);
+        for (let i = 0; i < numMemoryBanks; i++)
+        {
+            this.memory[i] = new Uint8Array(memorySize);
+        }
         this.registers = new Int32Array(registerSize);
         this.compareRegister = registerSize - 1;
     }
@@ -110,9 +120,9 @@
 
     fn.doOneStep = function()
     {
-        var instruction = this.nextInt8();
+        let instruction = this.nextInt8();
 
-        var arg1, arg2;
+        let arg1, arg2, arg3;
         switch (instruction)
         {
             // Move {{{
@@ -130,15 +140,29 @@
             case moveRP:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
-                this.setRegister(arg1, this.memory[this.registers[arg2]]);
+                this.setRegister(arg1, this.memory[this.registers[arg2]], 0);
                 break;
             case movePR:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
-                setMemory(this.registers[arg1], this.registers[arg2]);
+                setMemory(this.registers[arg1], this.registers[arg2], 0);
+                break;
+
+            case moveRPB:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt8();
+                arg3 = this.nextInt32();
+                this.setRegister(arg1, this.memory[this.registers[arg2]], arg3);
+                break;
+            case movePRB:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt8();
+                arg3 = this.nextInt32();
+                setMemory(this.registers[arg1], this.registers[arg2], arg3);
                 break;
             // }}}
 
+            // Add {{{
             case addRI:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt32();
@@ -150,6 +174,8 @@
                 this.setRegister(arg1, this.registers[arg1] + this.registers[arg2]);
                 break;
 
+            // }}}
+            
             // Compare {{{
             case compareRI:
                 arg1 = this.nextInt8();
@@ -221,9 +247,9 @@
         console.log('Set register ', reg, ' = ', value);
         this.registers[reg] = value;
     }
-    fn.setMemory = function(address, value)
+    fn.setMemory = function(address, value, bank)
     {
-        this.memory[address] = value;
+        this.memory[bank][address] = value;
     }
 
     fn.nextInt8 = function()
@@ -232,16 +258,16 @@
     }
     fn.nextInt16 = function()
     {
-        var byte1 = this.instructions[this.programCounter++];
-        var byte2 = this.instructions[this.programCounter++];
+        let byte1 = this.instructions[this.programCounter++];
+        let byte2 = this.instructions[this.programCounter++];
         return byte2 << 8 | byte1;
     }
     fn.nextInt32 = function()
     {
-        var byte1 = this.instructions[this.programCounter++];
-        var byte2 = this.instructions[this.programCounter++];
-        var byte3 = this.instructions[this.programCounter++];
-        var byte4 = this.instructions[this.programCounter++];
+        let byte1 = this.instructions[this.programCounter++];
+        let byte2 = this.instructions[this.programCounter++];
+        let byte3 = this.instructions[this.programCounter++];
+        let byte4 = this.instructions[this.programCounter++];
         return byte4 << 24 | byte3 << 16 | byte2 << 8 | byte1;
     }
 

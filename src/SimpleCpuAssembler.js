@@ -1,34 +1,35 @@
 ;(function()
 {
-    var tokenRegex = /;(.+)|[^\s"']+|"([^"]*)"|'([^']*)'/g;
+    let tokenRegex = /;(.+)|[^\s"']+|"([^"]*)"|'([^']*)'/g;
 
-    var TokenOpCode = 'opcode';
-    var TokenRegister = 'register';
-    var TokenPointer = 'pointer';
-    var TokenInt = 'int';
-    var TokenString = 'string';
-    var TokenLabel = 'label';
-    var TokenComment = 'comment';
+    let TokenOpCode = 'opcode';
+    let TokenRegister = 'register';
+    let TokenPointer = 'pointer';
+    let TokenInt = 'int';
+    let TokenByte = 'byte';
+    let TokenString = 'string';
+    let TokenLabel = 'label';
+    let TokenComment = 'comment';
 
-    var availableOpCodes = {};
+    let availableOpCodes = {};
 
-    var opCodeMappings = {};
+    let opCodeMappings = {};
     function createKey(opcodeName, types)
     {
         return opcodeName + '-' + types.join('-');
     }
     function setMapping(opcode, opcodeName)
     {
-        var types = Array.prototype.slice.call(arguments, 2);
+        let types = Array.prototype.slice.call(arguments, 2);
 
         availableOpCodes[opcodeName] = true;
-        var key = createKey(opcodeName, types);
+        let key = createKey(opcodeName, types);
         opCodeMappings[key] = opcode;
     }
     function getMapping(opcodeName, types)
     {
-        var key = createKey(opcodeName, types)
-        var result = opCodeMappings[key];
+        let key = createKey(opcodeName, types)
+        let result = opCodeMappings[key];
         if (!result)
         {
             throw new Error('Unknown opcode mapping: ', opcodeName, types);
@@ -61,12 +62,15 @@
 
     Assembler.init = function()
     {
-        var code = simpleCpu.opCodes;
+        let code = simpleCpu.opCodes;
         setMapping(code.moveRI, 'mov', TokenRegister, TokenInt);
         setMapping(code.moveRR, 'mov', TokenRegister, TokenRegister);
         
         setMapping(code.moveRP, 'mov', TokenRegister, TokenPointer);
         setMapping(code.movePR, 'mov', TokenPointer, TokenRegister);
+        
+        setMapping(code.moveRPB, 'mov', TokenRegister, TokenPointer, TokenByte);
+        setMapping(code.movePRB, 'mov', TokenPointer, TokenRegister, TokenByte);
         
         setMapping(code.addRI, 'add', TokenRegister, TokenInt);
         setMapping(code.addRR, 'add', TokenRegister, TokenRegister);
@@ -85,7 +89,7 @@
         console.log('Mappings', opCodeMappings);
     }
 
-    var fn = Assembler.prototype;
+    let fn = Assembler.prototype;
 
     fn.assemble = function(input)
     {
@@ -100,8 +104,8 @@
 
     fn.processInputLines = function(input)
     {
-        var split = input.split('\n');
-        for (var i = 0; i < split.length; i++)
+        let split = input.split('\n');
+        for (let i = 0; i < split.length; i++)
         {
             this.processLine(split[i], i);
         }
@@ -109,18 +113,18 @@
 
     fn.processLine = function(line, lineNumber)
     {
-        var trimmedLine = line.trim();
+        let trimmedLine = line.trim();
         if (trimmedLine.length === 0)
         {
             this.processedLines.push(null);
             return;
         }
 
-        var tokens = trimmedLine.match(tokenRegex);
+        let tokens = trimmedLine.match(tokenRegex);
         console.log('Split tokens [', lineNumber, ']: ', tokens);
 
-        var processedLine = [];
-        for (var i = 0; i < tokens.length; i++)
+        let processedLine = [];
+        for (let i = 0; i < tokens.length; i++)
         {
             processedLine.push(this.processToken(tokens[i], i === 0));
         }
@@ -130,8 +134,8 @@
 
     fn.processToken = function(token, isFirstToken)
     {
-        var lowerToken = token.toLowerCase();
-        var hasOpCode = availableOpCodes[lowerToken];
+        let lowerToken = token.toLowerCase();
+        let hasOpCode = availableOpCodes[lowerToken];
         if (hasOpCode === true)
         {
             return new Token(TokenOpCode, lowerToken);
@@ -152,10 +156,17 @@
         {
             return new Token(TokenComment, token);
         }
+
+        let last = token[token.length - 1]; 
         // eg: start:, jmp start:
-        if (token[token.length - 1] === ':')
+        if (last === ':')
         {
             return new Token(TokenLabel, token);
+        }
+        // eg: 5b, -10b == 246;
+        if (last === 'b')
+        {
+            return new Token(TokenInt, processByte(lowerToken));
         }
 
         if (isFirstToken)
@@ -165,17 +176,31 @@
         return new Token(TokenInt, parseInt(lowerToken));
     }
 
+    function processByte(input)
+    {
+        let result = parseInt(input);
+        if (result > 255 || result < -127)
+        {
+            throw new Error('Byte out of range ' + input);
+        }
+        if (result < 0)
+        {
+            result = 256 + result;
+        }
+        return result;
+    }
+
     fn.assembleTokens = function()
     {
-        for (var i = 0; i < this.processedLines.length; i++)
+        for (let i = 0; i < this.processedLines.length; i++)
         {
-            var line = this.processedLines[i];
+            let line = this.processedLines[i];
             if (line == null)
             {
                 continue;
             }
 
-            var assembledLine = this.assembleTokenLine(line);
+            let assembledLine = this.assembleTokenLine(line);
             if (assembledLine === null)
             {
                 continue;
@@ -189,29 +214,29 @@
 
     fn.combineResult = function()
     {
-        var totalBytes = 0;
-        for (var i = 0; i < this.resultBuilder.length; i++)
+        let totalBytes = 0;
+        for (let i = 0; i < this.resultBuilder.length; i++)
         {
             totalBytes += this.resultBuilder[i].bytes.length; 
         }
 
         this.finalResult = new Int8Array(totalBytes);
-        var pos = 0;
-        for (var i = 0; i < this.resultBuilder.length; i++)
+        let pos = 0;
+        for (let i = 0; i < this.resultBuilder.length; i++)
         {
             if (this.labels[i])
             {
                 this.labelBytePositions[this.labels[i]] = pos;
             }
 
-            var resultLine = this.resultBuilder[i];
+            let resultLine = this.resultBuilder[i];
             if (resultLine.label)
             {
                 this.addLabelReplaceLocation(resultLine.label, resultLine.labelIndex + pos);
             }
 
-            var bytes = resultLine.bytes;
-            for (var j = 0; j < bytes.length; j++)
+            let bytes = resultLine.bytes;
+            for (let j = 0; j < bytes.length; j++)
             {
                 this.finalResult[pos++] = bytes[j];
             }
@@ -222,7 +247,7 @@
 
     fn.addLabelReplaceLocation = function(label, index)
     {
-        var locations = this.labelReplaceLocations[label];
+        let locations = this.labelReplaceLocations[label];
         if (!locations)
         {
             locations = this.labelReplaceLocations[label] = [];
@@ -232,12 +257,12 @@
 
     fn.postProcessLabels = function()
     {
-        for (var label in this.labelReplaceLocations)
+        for (let label in this.labelReplaceLocations)
         {
-            var labelIndex = this.labelBytePositions[label];
-            var replaceIndices = this.labelReplaceLocations[label];
+            let labelIndex = this.labelBytePositions[label];
+            let replaceIndices = this.labelReplaceLocations[label];
 
-            for (var i = 0; i < replaceIndices.length; i++)
+            for (let i = 0; i < replaceIndices.length; i++)
             {
                 writeInt32(this.finalResult, replaceIndices[i], labelIndex);
             }
@@ -246,7 +271,7 @@
 
     fn.assembleTokenLine = function(line)
     {
-        var type = line[0].type;
+        let type = line[0].type;
         if (type === TokenLabel)
         {
             //this.labels[line[0].value] = this.resultBuilder.length;
@@ -264,27 +289,27 @@
 
     fn.writeLineToArray = function(line)
     {
-        var opcodeToken = line[0];
-        var lineTypes = this.getTypesFromLine(line);
+        let opcodeToken = line[0];
+        let lineTypes = this.getTypesFromLine(line);
 
-        var opcode = getMapping(opcodeToken.value, lineTypes);
+        let opcode = getMapping(opcodeToken.value, lineTypes);
         console.log('Opcode mapping: ', opcode, opcodeToken.value, lineTypes)
 
-        var byteCount = this.countBytesRequired(lineTypes);
+        let byteCount = this.countBytesRequired(lineTypes);
         // Plus one for opcode.
         byteCount += 1;
 
-        var resultBytes = new Int8Array(byteCount);
+        let resultBytes = new Int8Array(byteCount);
 
-        var labelFound = null;
-        var labelIndex = -1;
+        let labelFound = null;
+        let labelIndex = -1;
 
-        var position = writeInt8(resultBytes, 0, opcode);
+        let position = writeInt8(resultBytes, 0, opcode);
 
-        for (var i = 0; i < line.length; i++)
+        for (let i = 0; i < line.length; i++)
         {
-            var token = line[i];
-            var type = token.type;
+            let token = line[i];
+            let type = token.type;
             switch (type)
             {
                 default:
@@ -293,6 +318,7 @@
 
                 case TokenRegister:
                 case TokenPointer:
+                case TokenByte:
                     position = writeInt8(resultBytes, position, token.value);
                     break;
 
@@ -311,17 +337,18 @@
     }
     fn.countBytesRequired = function(lineTypes)
     {
-        var result = 0;
-        for (var i = 0; i < lineTypes.length; i++)
+        let result = 0;
+        for (let i = 0; i < lineTypes.length; i++)
         {
-            var type = lineTypes[i];
+            let type = lineTypes[i];
             if (type === TokenInt ||
                 type === TokenLabel)
             {
                 result += 4;
             }
             else if (type === TokenRegister ||
-                type === TokenPointer)
+                type === TokenPointer ||
+                type === TokenByte)
             {
                 result += 1;
             }
@@ -331,10 +358,10 @@
     }
     fn.getTypesFromLine = function(line)
     {
-        var result = [];
-        for (var i = 0; i < line.length; i++)
+        let result = [];
+        for (let i = 0; i < line.length; i++)
         {
-            var token = line[i];
+            let token = line[i];
             if (token.type === TokenOpCode || 
                 token.type === TokenComment)
             {
