@@ -11,7 +11,7 @@
         simpleCpuAssembler.init();
         
         cpu = new simpleCpu();
-        cpu.init(4, 1024, 8);
+        cpu.init(2, 8, 8);
 
         $('.js-texteditor').on('change', onTextChange);
 
@@ -70,6 +70,7 @@
     function updateDisplay()
     {
         $('.js-registers').html(getRegisterDisplay());
+        $('.js-memory').html(getMemoryDisplay());
         $('.js-program-counter').text(cpu.getProgramCounter());
 
         let pos = calcProgramCounterTextPosition();
@@ -130,6 +131,26 @@
         {
             result += i + ' = ' + registers[i] + '<br/>';
         }
+        return result;
+    }
+
+    function getMemoryDisplay()
+    {
+        let memory = cpu.memory;
+        let result = '';
+
+        for (let i = 0; i < memory.length; i++)
+        {
+            result += 'Bank ' + i + '<br/>';
+
+            let bank = memory[i];
+            for (let j = 0; j < bank.length; j++)
+            {
+                result += j + ' = ' + bank[j] + '<br/>';
+            }
+            result += '<br/>';
+        }
+
         return result;
     }
 

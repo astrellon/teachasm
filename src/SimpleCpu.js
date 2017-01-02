@@ -8,8 +8,8 @@
     let moveRP = ++opCodeCounter;
     let movePR = ++opCodeCounter;
 
-    let moveRPB = ++opCodeCounter;
-    let movePRB = ++opCodeCounter;
+    let moveRPI = ++opCodeCounter;
+    let movePRI = ++opCodeCounter;
 
     let addRI = ++opCodeCounter;
     let addRR = ++opCodeCounter;
@@ -19,6 +19,9 @@
     
     let multiplyRI = ++opCodeCounter;
     let multiplyRR = ++opCodeCounter;
+    
+    let divideRI = ++opCodeCounter;
+    let divideRR = ++opCodeCounter;
     
     let compareRI = ++opCodeCounter;
     let compareRR = ++opCodeCounter;
@@ -37,12 +40,13 @@
     let opCodes = {
         moveRI, moveRR, 
         moveRP, movePR,
-        moveRPB, movePRB,
+        moveRPI, movePRI,
 
         addRI, addRR,
         subtractRI, subtractRR,
 
         multiplyRI, multiplyRR,
+        divideRI, divideRR,
 
         compareRI, compareRR,
 
@@ -145,20 +149,20 @@
             case movePR:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
-                setMemory(this.registers[arg1], this.registers[arg2], 0);
+                this.setMemory(this.registers[arg1], this.registers[arg2], 0);
                 break;
 
-            case moveRPB:
+            case moveRPI:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
                 arg3 = this.nextInt32();
                 this.setRegister(arg1, this.memory[this.registers[arg2]], arg3);
                 break;
-            case movePRB:
+            case movePRI:
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
                 arg3 = this.nextInt32();
-                setMemory(this.registers[arg1], this.registers[arg2], arg3);
+                this.setMemory(this.registers[arg1], this.registers[arg2], arg3);
                 break;
             // }}}
 
@@ -172,6 +176,48 @@
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
                 this.setRegister(arg1, this.registers[arg1] + this.registers[arg2]);
+                break;
+
+            // }}}
+            
+            // Subtract {{{
+            case subtractRI:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                this.setRegister(arg1, this.registers[arg1] - arg2);
+                break;
+            case subtractRR:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt8();
+                this.setRegister(arg1, this.registers[arg1] - this.registers[arg2]);
+                break;
+
+            // }}}
+
+            // Multiply {{{
+            case multiplyRI:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                this.setRegister(arg1, this.registers[arg1] * arg2);
+                break;
+            case multiplyRR:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt8();
+                this.setRegister(arg1, this.registers[arg1] * this.registers[arg2]);
+                break;
+
+            // }}}
+
+            // Divide {{{
+            case divideRI:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                this.setRegister(arg1, Math.floor(this.registers[arg1] / arg2));
+                break;
+            case divideRR:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt8();
+                this.setRegister(arg1, Math.floor(this.registers[arg1] / this.registers[arg2]));
                 break;
 
             // }}}
@@ -249,6 +295,7 @@
     }
     fn.setMemory = function(address, value, bank)
     {
+        console.log('Set memory ', bank, address, ' = ', value);
         this.memory[bank][address] = value;
     }
 

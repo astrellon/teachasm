@@ -69,11 +69,20 @@
         setMapping(code.moveRP, 'mov', TokenRegister, TokenPointer);
         setMapping(code.movePR, 'mov', TokenPointer, TokenRegister);
         
-        setMapping(code.moveRPB, 'mov', TokenRegister, TokenPointer, TokenByte);
-        setMapping(code.movePRB, 'mov', TokenPointer, TokenRegister, TokenByte);
+        setMapping(code.moveRPI, 'mov', TokenRegister, TokenPointer, TokenInt);
+        setMapping(code.movePRI, 'mov', TokenPointer, TokenRegister, TokenInt);
         
         setMapping(code.addRI, 'add', TokenRegister, TokenInt);
         setMapping(code.addRR, 'add', TokenRegister, TokenRegister);
+        
+        setMapping(code.subtractRI, 'sub', TokenRegister, TokenInt);
+        setMapping(code.subtractRR, 'sub', TokenRegister, TokenRegister);
+        
+        setMapping(code.multiplyRI, 'mul', TokenRegister, TokenInt);
+        setMapping(code.multiplyRR, 'mul', TokenRegister, TokenRegister);
+        
+        setMapping(code.divideRI, 'div', TokenRegister, TokenInt);
+        setMapping(code.divideRR, 'div', TokenRegister, TokenRegister);
 
         setMapping(code.compareRI, 'cmp', TokenRegister, TokenInt);
         setMapping(code.compareRR, 'cmp', TokenRegister, TokenRegister);
@@ -166,7 +175,7 @@
         // eg: 5b, -10b == 246;
         if (last === 'b')
         {
-            return new Token(TokenInt, processByte(lowerToken));
+            return new Token(TokenByte, processByte(lowerToken));
         }
 
         if (isFirstToken)
