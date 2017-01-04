@@ -34,8 +34,17 @@
     let jumpGreaterThanL = ++opCodeCounter;
     let jumpGreaterThanEqualL = ++opCodeCounter;
     
+    let pushI = ++opCodeCounter;
+    let pushR = ++opCodeCounter;
+    let popR = ++opCodeCounter;
+    
     let callL = ++opCodeCounter;
     let returnV = ++opCodeCounter;
+    
+    let intL = ++opCodeCounter;
+    let returniV = ++opCodeCounter;
+
+    let stopV = ++opCodeCounter;
 
     let opCodes = {
         moveRI, moveRR, 
@@ -54,8 +63,12 @@
         jumpLessThanL, jumpLessThanEqualL,
         jumpGreaterThanL, jumpGreaterThanEqualL,
 
-        callL,
-        returnV
+        pushI, pushR, popR,
+
+        callL, returnV,
+        intL, returniV,
+
+        stopV
     };
 
     Object.preventExtensions(opCodes);
@@ -67,6 +80,9 @@
         this.registers = null;
         this.instructions = null;
         this.compareRegister = 0;
+        this.stack = null;
+        this.stackPointer = 0;
+        this.running = false;
 
         Object.preventExtensions(this);
     }
@@ -74,7 +90,7 @@
     SimpleCpu.opCodes = opCodes;
 
     let fn = SimpleCpu.prototype;
-    fn.init = function(numMemoryBanks, memorySize, registerSize)
+    fn.init = function(numMemoryBanks, memorySize, registerSize, stackSize)
     {
         this.programCounter = 0;
         this.memory = new Array(numMemoryBanks);
@@ -84,6 +100,9 @@
         }
         this.registers = new Int32Array(registerSize);
         this.compareRegister = registerSize - 1;
+        this.stack = new Int32Array(stackSize);
+        this.stackPointer = 0;
+        this.running = true;
     }
 
     fn.setInstructions = function(input)
@@ -101,7 +120,8 @@
 
     fn.execute = function()
     {
-        while (this.programCounter < this.instructions.length)
+        //while (this.programCounter < this.instructions.length)
+        while (this.running)
         {
             this.doOneStep();
         }
@@ -111,7 +131,7 @@
 
     fn.oneStep = function()
     {
-        if (this.programCounter < this.instructions.length)
+        if (this.running)
         {
             this.doOneStep();
         }
@@ -120,6 +140,7 @@
     fn.reset = function()
     {
         this.programCounter = 0;
+        this.running = true;
     }
 
     fn.doOneStep = function()
@@ -129,6 +150,10 @@
         let arg1, arg2, arg3;
         switch (instruction)
         {
+            case stopV:
+                this.running = false;
+                break;
+
             // Move {{{
             case moveRI:
                 arg1 = this.nextInt8();
@@ -285,6 +310,41 @@
                 }
                 break;
             // }}}
+
+            // Push / Pop {{{
+            case pushR:
+                arg1 = this.nextInt8();
+                this.pushStack(this.registers[arg1]);
+                break;
+            case pushI:
+                arg1 = this.nextInt32();
+                this.pushStack(arg1);
+                break;
+            case popR:
+                arg1 = this.nextInt8();
+                this.setRegister(arg1, this.popStack());
+                break;
+            // }}}
+
+            // Call / Return {{{
+            case callL:
+                arg1 = this.nextInt32();
+                this.pushStack(this.programCounter);
+                this.programCounter = arg1;
+                break;
+            case returnV:
+                this.programCounter = this.popStack();
+                break;
+            // }}}
+        }
+
+        if (this.programCounter === this.instructions.length)
+        {
+            this.running = false;
+        }
+        else if (this.programCounter > this.instructions.length)
+        {
+            throw new Error('PC past end of code');
         }
     }
 
@@ -317,6 +377,25 @@
         let byte4 = this.instructions[this.programCounter++];
         return byte4 << 24 | byte3 << 16 | byte2 << 8 | byte1;
     }
+
+    // Stack operations {{{
+    fn.pushStack = function(value)
+    {
+        if (this.stackPointer >= this.stack.length - 1)
+        {
+            throw new Error('Stack overflow');
+        }
+        this.stack[this.stackPointer++] = value;
+    }
+    fn.popStack = function()
+    {
+        if (this.stackPointer === 0)
+        {
+            throw new Error('Stack underflow');
+        }
+        return this.stack[--this.stackPointer];
+    }
+    // }}}
 
     window.simpleCpu = SimpleCpu;
 

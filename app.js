@@ -11,7 +11,7 @@
         simpleCpuAssembler.init();
         
         cpu = new simpleCpu();
-        cpu.init(2, 8, 8);
+        cpu.init(2, 8, 8, 16);
 
         $('.js-texteditor').on('change', onTextChange);
 

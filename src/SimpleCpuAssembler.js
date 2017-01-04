@@ -34,6 +34,7 @@
         {
             throw new Error('Unknown opcode mapping: ', opcodeName, types);
         }
+
         return result;
     }
 
@@ -94,6 +95,15 @@
         setMapping(code.jumpLessThanEqualL, 'jlte', TokenLabel);
         setMapping(code.jumpGreaterThanL, 'jgt', TokenLabel);
         setMapping(code.jumpGreaterThanEqualL, 'jgte', TokenLabel);
+        
+        setMapping(code.callL, 'call', TokenLabel);
+        setMapping(code.returnV, 'return');
+        
+        setMapping(code.pushI, 'push', TokenInt);
+        setMapping(code.pushR, 'push', TokenRegister);
+        setMapping(code.popR, 'pop', TokenRegister);
+        
+        setMapping(code.stopV, 'stop');
 
         console.log('Mappings', opCodeMappings);
     }
