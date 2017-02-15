@@ -52,11 +52,19 @@
         this.valueNode = valueNode;
     }
 
-    function ConditionNode(node)
+    function ConditionNode(valueNode, trueNode)
     {
-        this.node = node;
+        this.valueNode = valueNode;
+        this.trueNode = trueNode;
     }
     ConditionNode.prototype = Object.create(BaseNode.prototype);
+
+    function EqualsNode(node1, node2)
+    {
+        this.node1 = node1;
+        this.node2 = node2;
+    }
+    EqualsNode.prototype = Object.create(BaseNode.prototype);
     // }}}
     
     function SimpleAST()
@@ -70,6 +78,7 @@
     SimpleAST.immediateValue = ImmediateValueNode;
     SimpleAST.assign = AssignNode;
     SimpleAST.add = AddNode;
+    SimpleAST.equals = EqualsNode;
 
     window.simpleAst = SimpleAST;
 })();

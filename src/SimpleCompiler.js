@@ -8,6 +8,7 @@
         this.registers = [];
         this.numRegisters = 8;
         this.registerAccessCounter = 1;
+        this.conditionCounter = 1;
 
         for (var i = 0; i < this.numRegisters; i++)
         {
@@ -37,6 +38,14 @@
         var add = new sast.add(setVar, getVar);
         
         this.ast.rootNodes.push(add);
+
+        var equals = new sast.equals(getVar, value);
+        value = new sast.immediateValue('int', 1337);
+        setVar = new sast.getVar('', 'z');
+        assign = new sast.assign(setVar, value);
+        var condition = new sast.condition(equals, assign);
+
+        this.ast.rootNodes.push(condition);
     }
 
     fn.getVariable = function(fullname)
@@ -95,12 +104,37 @@
         {
             var register = this.compileGetNode(node.destNode);
             this.output.push('MOV r' + register.registerNumber + ' ' + this.compileValueNode(node.valueNode));
+            return register;
         }
-        else if (node instanceof simpleAst.add)
+        if (node instanceof simpleAst.add)
         {
             var register = this.compileGetNode(node.destNode);
             this.output.push('ADD r' + register.registerNumber + ' ' + this.compileValueNode(node.valueNode));
+            return register;
         }
+        if (node instanceof simpleAst.condition)
+        {
+            var register = this.compileNode(node.valueNode);
+            var label = 'condition_' + (this.conditionCounter++) + ':';
+            //this.output.push('CMP r' + register + ' 0');
+            this.output.push('JNEQ ' + label);
+            this.compileNode(node.trueNode);
+            this.output.push(label);
+            return register;
+        }
+        if (node instanceof simpleAst.equals)
+        {
+            var value1 = this.compileValueNode(node.node1);
+            var value2 = this.compileValueNode(node.node2);
+            this.output.push('CMP ' + value1 + ' ' + value2);
+            return null;
+        }
+        if (node instanceof simpleAst.getVar)
+        {
+            return this.compileGetNode(node);
+        }
+
+        throw new Error('Unknown node! ' + node);
     }
     fn.compileGetNode = function(node)
     {
@@ -113,7 +147,7 @@
         {
             return node.value;
         }
-        else if (node instanceof simpleAst.getVar)
+        if (node instanceof simpleAst.getVar)
         {
             var register = this.compileGetNode(node);
             return 'r' + register.registerNumber;

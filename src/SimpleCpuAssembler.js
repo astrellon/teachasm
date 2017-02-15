@@ -272,7 +272,12 @@
             }
         }
 
-        console.log(this.labelBytePositions, this.labelReplaceLocations);
+        if (this.labels[this.resultBuilder.length])
+        {
+            this.labelBytePositions[this.labels[this.resultBuilder.length]] = pos;
+        }
+
+        console.log('Label Byte Positions: ', this.labelBytePositions, this.labelReplaceLocations);
     }
 
     fn.addLabelReplaceLocation = function(label, index)
