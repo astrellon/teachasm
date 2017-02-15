@@ -32,6 +32,13 @@
         textHeight = $testText.height();
         console.log('Size: ', textWidth, textHeight);
         $testText.removeClass('test-text').text('');
+
+        setTimeout(function()
+        {
+            let compiler = new simpleCompiler();
+            compiler.create();
+            compiler.compile();
+        }, 1);
     }
 
     function onTextChange(e)

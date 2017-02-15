@@ -46,10 +46,10 @@
     }
     ImmediateValueNode.prototype = Object.create(BaseNode.prototype);
 
-    function AddNode(destNode, srcNode)
+    function AddNode(destNode, valueNode)
     {
-        this.destName = destName;
-        this.srcNode = srcNode;
+        this.destNode = destNode;
+        this.valueNode = valueNode;
     }
 
     function ConditionNode(node)

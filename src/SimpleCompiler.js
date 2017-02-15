@@ -5,10 +5,14 @@
         this.ast = new window.simpleAst();
         this.variables = {};
         this.memCounter = 0;
-        this.registers = {};
+        this.registers = [];
         this.numRegisters = 8;
-        this.registerAccessCounter = 0;
-        this.numRegistersInUse = 0;
+        this.registerAccessCounter = 1;
+
+        for (var i = 0; i < this.numRegisters; i++)
+        {
+            this.registers.push(new Register(i));
+        }
 
         this.output = [];
     }
@@ -18,12 +22,21 @@
     {
         var sast = window.simpleAst;
         var value = new sast.immediateValue('int', 5);
-        var declare = new sast.declareVar('', 'x', 'int');
         var setVar = new sast.getVar('', 'x');
-        var assign = new sast.assign(declare, setVar);
+        var assign = new sast.assign(setVar, value);
 
-        this.ast.rootNodes.push(declare);
         this.ast.rootNodes.push(assign);
+
+        value = new sast.immediateValue('int', 8);
+        setVar = new sast.getVar('', 'y');
+        assign = new sast.assign(setVar, value);
+        
+        this.ast.rootNodes.push(assign);
+        
+        var getVar = new sast.getVar('x');
+        var add = new sast.add(setVar, getVar);
+        
+        this.ast.rootNodes.push(add);
     }
 
     fn.getVariable = function(fullname)
@@ -35,19 +48,19 @@
         }
         return result;
     }
-    fn.getRegister = function(fullname)
+    fn.getRegister = function(variable)
     {
-        var inRegister = this.registers[fullname];
-        if (inRegister)
-        {
-            return inRegister;
-        }
+       for (var i = 0; i < this.registers.length; i++)
+       {
+           var register = this.registers[i];
+           if (register.variable === variable)
+           {
+               register.lastAccess = this.registerAccessCounter++;
+               return register;
+           }
+       }
 
-        if (this.numRegistersInUse >= this.numRegisters)
-        {
-            var oldest = this.getOldestRegister();
-            this.output.push()
-        }
+       return null;
     }
     fn.getOldestRegister = function()
     {
@@ -65,35 +78,61 @@
 
     fn.compile = function()
     {
-        
+        this.output = [];
+
+        for (var i = 0; i < this.ast.rootNodes.length; i++)
+        {
+            var node = this.ast.rootNodes[i];
+            this.compileNode(node);
+        }
+
+        console.log('Output: ', this.output.join('\n'));
     }
 
     fn.compileNode = function(node)
     {
         if (node instanceof simpleAst.assign)
         {
-            this.compileNode(node.destNode);
-            this.compileGetNode(node.valueNode, 0);
-            this.output.push('MOV @r1 r0');
-        }
-        else if (node instanceof simpleAst.getVar)
-        {
-            var variable = this.getVariable(node.fullname);
-            this.output.push('MOV r1 ' + variable.memoryPos);
-        }
-        else if (node instanceof simpleAst.immediateValue)
-        {
-            this.output.push('MOV r0 ' + node.value);
+            var register = this.compileGetNode(node.destNode);
+            this.output.push('MOV r' + register.registerNumber + ' ' + this.compileValueNode(node.valueNode));
         }
         else if (node instanceof simpleAst.add)
         {
-            //this.compileGetNode(simpleAst.)
+            var register = this.compileGetNode(node.destNode);
+            this.output.push('ADD r' + register.registerNumber + ' ' + this.compileValueNode(node.valueNode));
         }
     }
-    fn.compileGetNode(node, register)
+    fn.compileGetNode = function(node)
     {
         var variable = this.getVariable(node.fullname);
-        this.output.push('MOV r' + register + ' ' + variable.memoryPos);
+        return this.compileGetRegister(variable);
+    }
+    fn.compileValueNode = function(node)
+    {
+        if (node instanceof simpleAst.immediateValue)
+        {
+            return node.value;
+        }
+        else if (node instanceof simpleAst.getVar)
+        {
+            var register = this.compileGetNode(node);
+            return 'r' + register.registerNumber;
+        }
+    }
+    fn.compileGetRegister = function(variable)
+    {
+        var register = this.getRegister(variable);
+        if (register == null)
+        {
+            register = this.getOldestRegister();
+            if (register != null && register.variable != null)
+            {
+                this.output.push('MOV @' + register.variable.memoryPos + ' r' + register.registerNumber);
+            }
+            register.lastAccess = this.registerAccessCounter++;
+            register.variable = variable;
+        }
+        return register;
     }
 
     var inMemoryPos = 'inMemory';
@@ -112,6 +151,6 @@
         this.registerNumber = regNumber;
     }
 
-    window.simpleCompiler = Compiler;
+    window.simpleCompiler = SimpleCompiler;
 
 })();
