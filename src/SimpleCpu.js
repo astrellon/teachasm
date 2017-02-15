@@ -8,6 +8,12 @@
     let moveRP = ++opCodeCounter;
     let movePR = ++opCodeCounter;
 
+    let moveRV = ++opCodeCounter;
+    let moveVR = ++opCodeCounter;
+
+    let moveRVI = ++opCodeCounter;
+    let moveVRI = ++opCodeCounter;
+
     let moveRPI = ++opCodeCounter;
     let movePRI = ++opCodeCounter;
 
@@ -49,6 +55,7 @@
     let opCodes = {
         moveRI, moveRR, 
         moveRP, movePR,
+        moveRV, moveVR,
         moveRPI, movePRI,
 
         addRI, addRR,
@@ -175,6 +182,30 @@
                 arg1 = this.nextInt8();
                 arg2 = this.nextInt8();
                 this.setMemory(this.registers[arg1], this.registers[arg2], 0);
+                break;
+
+            case moveRV:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                this.setRegister(arg1, this.memory[arg2], 0);
+                break;
+            case moveVR:
+                arg1 = this.nextInt32();
+                arg2 = this.nextInt8();
+                this.setMemory(arg1, this.registers[arg2], 0);
+                break;
+
+            case moveRVI:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                arg3 = this.nextInt32();
+                this.setRegister(arg1, this.memory[arg2], arg3);
+                break;
+            case moveVRI:
+                arg1 = this.nextInt32();
+                arg2 = this.nextInt8();
+                arg3 = this.nextInt32();
+                this.setMemory(arg1, this.registers[arg2], arg3);
                 break;
 
             case moveRPI:

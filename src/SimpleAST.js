@@ -18,6 +18,7 @@
     {
         this.scope = scope;
         this.variableName = variableName;
+        this.fullname = variableName + '@' + (scope ? scope : '__global');
     }
     VariableNode.prototype = Object.create(BaseNode.prototype);
     function SetVariableNode(scope, variableName)
@@ -45,6 +46,12 @@
     }
     ImmediateValueNode.prototype = Object.create(BaseNode.prototype);
 
+    function AddNode(destNode, srcNode)
+    {
+        this.destName = destName;
+        this.srcNode = srcNode;
+    }
+
     function ConditionNode(node)
     {
         this.node = node;
@@ -62,6 +69,7 @@
     SimpleAST.condition = ConditionNode;
     SimpleAST.immediateValue = ImmediateValueNode;
     SimpleAST.assign = AssignNode;
+    SimpleAST.add = AddNode;
 
     window.simpleAst = SimpleAST;
 })();

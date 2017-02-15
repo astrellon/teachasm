@@ -5,6 +5,7 @@
     let TokenOpCode = 'opcode';
     let TokenRegister = 'register';
     let TokenPointer = 'pointer';
+    let TokenValuePointer = 'value_pointer';
     let TokenInt = 'int';
     let TokenByte = 'byte';
     let TokenString = 'string';
@@ -69,6 +70,12 @@
         
         setMapping(code.moveRP, 'mov', TokenRegister, TokenPointer);
         setMapping(code.movePR, 'mov', TokenPointer, TokenRegister);
+        
+        setMapping(code.moveRV, 'mov', TokenRegister, TokenValuePointer);
+        setMapping(code.moveVR, 'mov', TokenValuePointer, TokenRegister);
+        
+        setMapping(code.moveRVI, 'mov', TokenRegister, TokenValuePointer, TokenInt);
+        setMapping(code.moveVRI, 'mov', TokenValuePointer, TokenRegister, TokenInt);
         
         setMapping(code.moveRPI, 'mov', TokenRegister, TokenPointer, TokenInt);
         setMapping(code.movePRI, 'mov', TokenPointer, TokenRegister, TokenInt);
@@ -169,6 +176,10 @@
         if (lowerToken[0] === '@' && lowerToken[1] === 'r')
         {
             return new Token(TokenPointer, parseInt(lowerToken.substr(2)));
+        }
+        if (lowerToken[0] === '@')
+        {
+            return new Token(TokenValuePointer, parseInt(lowerToken.substr(1)));
         }
         // eg: mov r0 5 ; This is a comment
         if (lowerToken[0] === ';')
