@@ -34,18 +34,21 @@
         
         this.ast.rootNodes.push(assign);
         
-        var getVar = new sast.getVar('x');
+        var getVar = new sast.getVar('', 'x');
         var add = new sast.add(setVar, getVar);
         
         this.ast.rootNodes.push(add);
 
-        var equals = new sast.equals(getVar, value);
-        value = new sast.immediateValue('int', 1337);
-        setVar = new sast.getVar('', 'z');
-        assign = new sast.assign(setVar, value);
-        var condition = new sast.condition(equals, assign);
+        var equals = sast.compare.equals(getVar, value);
+        var loopBody = new sast.statement();
+        var one = new sast.immediateValue('int', 1);
+        loopBody.nodes.push(new sast.add(getVar, one));
+        //value = new sast.immediateValue('int', 1337);
+        //setVar = new sast.getVar('', 'z');
+        //assign = new sast.assign(setVar, value);
+        var loop = new sast.loop(equals, loopBody);
 
-        this.ast.rootNodes.push(condition);
+        this.ast.rootNodes.push(loop);
     }
 
     fn.getVariable = function(fullname)
@@ -114,27 +117,63 @@
         }
         if (node instanceof simpleAst.condition)
         {
-            var register = this.compileNode(node.valueNode);
             var label = 'condition_' + (this.conditionCounter++) + ':';
-            //this.output.push('CMP r' + register + ' 0');
-            this.output.push('JNEQ ' + label);
+            this.compileCompareNode(node.compareNode);
+            this.output.push(this.getCompareJump(node.compareNode) + ' ' + label);
             this.compileNode(node.trueNode);
             this.output.push(label);
             return register;
         }
-        if (node instanceof simpleAst.equals)
+        if (node instanceof simpleAst.compare)
         {
-            var value1 = this.compileValueNode(node.node1);
-            var value2 = this.compileValueNode(node.node2);
-            this.output.push('CMP ' + value1 + ' ' + value2);
-            return null;
+            this.compileCompareNode(node);
+            return node;
         }
         if (node instanceof simpleAst.getVar)
         {
             return this.compileGetNode(node);
         }
+        if (node instanceof simpleAst.statement)
+        {
+            var result = null;
+            for (var i = 0; i < node.nodes.length; i++)
+            {
+                result = this.compileNode(node.nodes[i]);
+            }
+            return result;
+        }
+        if (node instanceof simpleAst.loop)
+        {
+            var counter = this.conditionCounter++;
+            var startLabel = 'loop_start_' + counter + ':';
+            var endLabel = 'loop_end_' + counter + ':';
+
+            this.output.push(startLabel);
+            this.compileCompareNode(node.compareNode);
+            this.output.push(this.getCompareJump(node.compareNode) + ' ' + endLabel);
+            this.compileNode(node.loopBody);
+            this.output.push('JMP ' + startLabel);
+            this.output.push(endLabel);
+            return register;
+        }
 
         throw new Error('Unknown node! ' + node);
+    }
+    fn.compileCompareNode = function(node)
+    {
+        var value1 = this.compileValueNode(node.node1);
+        var value2 = this.compileValueNode(node.node2);
+        this.output.push('CMP ' + value1 + ' ' + value2);
+    }
+    fn.getCompareJump = function(node)
+    {
+        switch (node.comparison)
+        {
+            case 'equals': return 'JEQ';
+            case 'notEquals': return 'JNEQ';
+        }
+
+        throw new Error('Unknown compare comparison: ' + node.comparison);
     }
     fn.compileGetNode = function(node)
     {

@@ -6,6 +6,12 @@
 
     }
 
+    function StatementBlockNode()
+    {
+        this.nodes = [];
+    }
+    StatementBlockNode.prototype = Object.create(BaseNode.prototype);
+
     function AssignNode(destNode, valueNode)
     {
         this.destNode = destNode;
@@ -52,19 +58,44 @@
         this.valueNode = valueNode;
     }
 
-    function ConditionNode(valueNode, trueNode)
+    function ConditionNode(compareNode, trueNode)
     {
-        this.valueNode = valueNode;
+        this.compareNode = compareNode;
         this.trueNode = trueNode;
     }
     ConditionNode.prototype = Object.create(BaseNode.prototype);
 
-    function EqualsNode(node1, node2)
+    function CompareNode(node1, node2, comparison)
     {
         this.node1 = node1;
         this.node2 = node2;
+        this.comparison = comparison;
     }
-    EqualsNode.prototype = Object.create(BaseNode.prototype);
+    CompareNode.equals = function(node1, node2)
+    {
+        return new CompareNode(node1, node2, 'equals');
+    }
+    CompareNode.notEquals = function(node1, node2)
+    {
+        return new CompareNode(node1, node2, 'notEquals'); 
+    }
+    CompareNode.prototype = Object.create(BaseNode.prototype);
+
+    function LoopNode(compareNode, loopBody)
+    {
+        this.compareNode = compareNode;
+        this.loopBody = loopBody;
+    }
+    LoopNode.prototype = Object.create(BaseNode.prototype);
+
+    function ForLoopNode(compareNode, initialNode, iterationNode, loopBody)
+    {
+        this.compareNode = compareNode;
+        this.initialNode = initialNode;
+        this.iterationNode = iterationNode;
+        this.loopBody = loopBody;
+    }
+    ForLoopNode.prototype = Object.create(BaseNode.prototype);
     // }}}
     
     function SimpleAST()
@@ -78,7 +109,10 @@
     SimpleAST.immediateValue = ImmediateValueNode;
     SimpleAST.assign = AssignNode;
     SimpleAST.add = AddNode;
-    SimpleAST.equals = EqualsNode;
+    SimpleAST.compare = CompareNode;
+    SimpleAST.statement = StatementBlockNode;
+    SimpleAST.loop = LoopNode;
+    SimpleAST.forLoop = ForLoopNode;
 
     window.simpleAst = SimpleAST;
 })();
