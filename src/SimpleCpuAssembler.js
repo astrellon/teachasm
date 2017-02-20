@@ -11,6 +11,7 @@
     let TokenString = 'string';
     let TokenLabel = 'label';
     let TokenComment = 'comment';
+    let TokenStackIndex = 'stack_index';
 
     let availableOpCodes = {};
 
@@ -60,6 +61,7 @@
         this.processedLines = [];
         this.resultBuilder = [];
         this.finalResult = null;
+        this.numRegisters = 8 + 3;
     }
 
     Assembler.init = function()
@@ -79,6 +81,10 @@
         
         setMapping(code.moveRPI, 'mov', TokenRegister, TokenPointer, TokenInt);
         setMapping(code.movePRI, 'mov', TokenPointer, TokenRegister, TokenInt);
+        
+        setMapping(code.moveRS, 'mov', TokenRegister, TokenStackIndex);
+        setMapping(code.moveSR, 'mov', TokenStackIndex, TokenRegister);
+        setMapping(code.moveSI, 'mov', TokenStackIndex, TokenInt);
         
         setMapping(code.addRI, 'add', TokenRegister, TokenInt);
         setMapping(code.addRR, 'add', TokenRegister, TokenRegister);
@@ -162,16 +168,29 @@
     {
         let lowerToken = token.toLowerCase();
         let hasOpCode = availableOpCodes[lowerToken];
+
         if (hasOpCode === true)
         {
             return new Token(TokenOpCode, lowerToken);
         }
 
+        // Registers {{{
         // eg: r0, r10
         if (lowerToken[0] === 'r')
         {
             return new Token(TokenRegister, parseInt(lowerToken.substr(1)));
         }
+        if (lowerToken === 'stack_pointer')
+        {
+            return new Token(TokenRegister, this.numRegisters - simpleCpu.offsets.stackPointer);
+        }
+        if (lowerToken === 'base_pointer')
+        {
+            return new Token(TokenRegister, this.numRegisters - simpleCpu.offsets.basePointer);
+        }
+        // }}}
+
+        // Memory {{{
         // eg: @r2, @r13
         if (lowerToken[0] === '@' && lowerToken[1] === 'r')
         {
@@ -181,6 +200,14 @@
         {
             return new Token(TokenValuePointer, parseInt(lowerToken.substr(1)));
         }
+        // }}}
+
+        // Stack base index offset eg: mov r5 [5]
+        if (lowerToken[0] === '[' && lowerToken[lowerToken.length - 1] === ']')
+        {
+            return new Token(TokenStackIndex, parseInt(lowerToken.substr(1, lowerToken.length - 2)));
+        }
+        
         // eg: mov r0 5 ; This is a comment
         if (lowerToken[0] === ';')
         {
@@ -193,6 +220,7 @@
         {
             return new Token(TokenLabel, token);
         }
+
         // eg: 5b, -10b == 246;
         if (last === 'b')
         {
@@ -309,7 +337,6 @@
         let type = line[0].type;
         if (type === TokenLabel)
         {
-            //this.labels[line[0].value] = this.resultBuilder.length;
             this.labels[this.resultBuilder.length] = line[0].value;
             return null;
         }
@@ -348,6 +375,7 @@
             switch (type)
             {
                 default:
+                    throw new Error('Unsupported token type: ' + type);
                 case TokenOpCode:
                     break;
 
@@ -363,6 +391,8 @@
                     position = writeInt32(resultBytes, position, 0);
                     break;
 
+                case TokenValuePointer:
+                case TokenStackIndex:
                 case TokenInt:
                     position = writeInt32(resultBytes, position, token.value);
                     break;
@@ -377,7 +407,9 @@
         {
             let type = lineTypes[i];
             if (type === TokenInt ||
-                type === TokenLabel)
+                type === TokenLabel ||
+                type === TokenStackIndex ||
+                type === TokenValuePointer)
             {
                 result += 4;
             }
@@ -386,6 +418,10 @@
                 type === TokenByte)
             {
                 result += 1;
+            }
+            else if (type !== TokenComment)
+            {
+                throw new Error('Unsupported token type: ' + type);
             }
         }
 

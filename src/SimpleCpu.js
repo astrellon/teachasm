@@ -16,6 +16,10 @@
 
     let moveRPI = ++opCodeCounter;
     let movePRI = ++opCodeCounter;
+    
+    let moveRS = ++opCodeCounter;
+    let moveSR = ++opCodeCounter;
+    let moveSI = ++opCodeCounter;
 
     let addRI = ++opCodeCounter;
     let addRR = ++opCodeCounter;
@@ -57,6 +61,8 @@
         moveRP, movePR,
         moveRV, moveVR,
         moveRPI, movePRI,
+        
+        moveRS, moveSR, moveSI,
 
         addRI, addRR,
         subtractRI, subtractRR,
@@ -77,6 +83,11 @@
 
         stopV
     };
+    let offsets = {
+        'stackPointer': 3,
+        'basePointer': 2,
+        'compareRegister': 1
+    }
 
     Object.preventExtensions(opCodes);
 
@@ -89,12 +100,14 @@
         this.compareRegister = 0;
         this.stack = null;
         this.stackPointer = 0;
+        this.basePointer = 0;
         this.running = false;
 
         Object.preventExtensions(this);
     }
 
     SimpleCpu.opCodes = opCodes;
+    SimpleCpu.offsets = offsets;
 
     let fn = SimpleCpu.prototype;
     fn.init = function(numMemoryBanks, memorySize, registerSize, stackSize)
@@ -105,10 +118,14 @@
         {
             this.memory[i] = new Uint8Array(memorySize);
         }
+
+        registerSize += 3;
         this.registers = new Int32Array(registerSize);
-        this.compareRegister = registerSize - 1;
+        this.compareRegister = registerSize - offsets.compareRegister;
+        this.stackPointer = registerSize - offsets.stackPointer;
+        this.basePointer = registerSize - offsets.basePointer;
+
         this.stack = new Int32Array(stackSize);
-        this.stackPointer = 0;
         this.running = true;
     }
 
@@ -127,7 +144,6 @@
 
     fn.execute = function()
     {
-        //while (this.programCounter < this.instructions.length)
         while (this.running)
         {
             this.doOneStep();
@@ -148,6 +164,8 @@
     {
         this.programCounter = 0;
         this.running = true;
+
+        this.registers.fill(0);
     }
 
     fn.doOneStep = function()
@@ -219,6 +237,22 @@
                 arg2 = this.nextInt8();
                 arg3 = this.nextInt32();
                 this.setMemory(this.registers[arg1], this.registers[arg2], arg3);
+                break;
+
+            case moveRS:
+                arg1 = this.nextInt8();
+                arg2 = this.nextInt32();
+                this.setRegister(arg1, this.getBaseStack(arg2));
+                break;
+            case moveSR:
+                arg1 = this.nextInt32();
+                arg2 = this.nextInt8();
+                this.setBaseStack(arg1, this.registers[arg2]);
+                break;
+            case moveSI:
+                arg1 = this.nextInt32();
+                arg2 = this.nextInt32();
+                this.setBaseStack(arg1, arg2);
                 break;
             // }}}
 
@@ -412,19 +446,40 @@
     // Stack operations {{{
     fn.pushStack = function(value)
     {
-        if (this.stackPointer >= this.stack.length - 1)
+        var stackPointerValue = this.getStackPointer(); 
+        if (stackPointerValue >= this.stack.length - 1)
         {
             throw new Error('Stack overflow');
         }
-        this.stack[this.stackPointer++] = value;
+        this.stack[stackPointerValue++] = value;
+        this.setRegister(this.stackPointer, stackPointerValue)
     }
     fn.popStack = function()
     {
-        if (this.stackPointer === 0)
+        var stackPointerValue = this.getStackPointer();
+        if (this.stackPointerValue === 0)
         {
             throw new Error('Stack underflow');
         }
-        return this.stack[--this.stackPointer];
+        var result = this.stack[--stackPointerValue];
+        this.setRegister(this.stackPointer, stackPointerValue);
+        return result;
+    }
+    fn.getBaseStack = function(offset)
+    {
+        return this.stack[this.getBasePointer() + offset];
+    }
+    fn.setBaseStack = function(offset, value)
+    {
+        this.stack[this.getBasePointer() + offset] = value;
+    }
+    fn.getBasePointer = function()
+    {
+        return this.registers[this.basePointer];
+    }
+    fn.getStackPointer = function()
+    {
+        return this.registers[this.stackPointer];
     }
     // }}}
 

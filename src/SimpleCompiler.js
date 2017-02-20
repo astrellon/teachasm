@@ -43,9 +43,6 @@
         var loopBody = new sast.statement();
         var one = new sast.immediateValue('int', 1);
         loopBody.nodes.push(new sast.add(getVar, one));
-        //value = new sast.immediateValue('int', 1337);
-        //setVar = new sast.getVar('', 'z');
-        //assign = new sast.assign(setVar, value);
         var loop = new sast.loop(equals, loopBody);
 
         this.ast.rootNodes.push(loop);

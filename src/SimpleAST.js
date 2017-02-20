@@ -96,6 +96,13 @@
         this.loopBody = loopBody;
     }
     ForLoopNode.prototype = Object.create(BaseNode.prototype);
+
+    function FunctionNode(bodyNode)
+    {
+        this.inputNodes = [];
+        this.bodyNode = bodyNode;
+    }
+    FunctionNode.prototype = Object.create(BaseNode.prototype);
     // }}}
     
     function SimpleAST()
