@@ -3,8 +3,10 @@
     function SimpleCompiler()
     {
         this.ast = new window.simpleAst();
-        this.variables = {};
         this.memCounter = 0;
+        this.globalScope = new Scope();
+        this.scopeStack = [this.globalScope];
+
         this.registers = [];
         this.numRegisters = 8;
         this.registerAccessCounter = 1;
@@ -19,6 +21,7 @@
     }
     var fn = SimpleCompiler.prototype;
 
+    // Testing {{{
     fn.create = function()
     {
         var sast = window.simpleAst;
@@ -47,16 +50,8 @@
 
         this.ast.rootNodes.push(loop);
     }
+    // }}}
 
-    fn.getVariable = function(fullname)
-    {
-        var result = this.variables[fullname];
-        if (!result)
-        {
-            result = this.variables[fullname] = new Variable(fullname, this.memCounter++);
-        }
-        return result;
-    }
     fn.getRegister = function(variable)
     {
        for (var i = 0; i < this.registers.length; i++)
@@ -174,7 +169,7 @@
     }
     fn.compileGetNode = function(node)
     {
-        var variable = this.getVariable(node.fullname);
+        var variable = this.globalScope.getVariable(node.fullname);
         return this.compileGetRegister(variable);
     }
     fn.compileValueNode = function(node)
@@ -205,13 +200,19 @@
         return register;
     }
 
-    var inMemoryPos = 'inMemory';
-    var inRegisterPos = 'inRegister';
-    function Variable(fullname, memoryPos)
+    let inMemoryPos = 'inMemory';
+    let inRegisterPos = 'inRegister';
+    function Variable(scope, name, memoryPos)
     {
-        this.fullname = fullname;
+        this.scope = scope;
+        this.name = name;
         this.position = inMemoryPos;
         this.memoryPos = memoryPos;
+    }
+    function LocalVariable(scope, name)
+    {
+        this.scope = scope;
+        this.name = name;
     }
 
     function Register(regNumber)
@@ -219,6 +220,20 @@
         this.lastAccess = 0;
         this.variable = null;
         this.registerNumber = regNumber;
+    }
+
+    function Scope()
+    {
+        this.variables = {};
+    }
+    Scope.prototype.getVariable = function(name)
+    {
+        var result = this.variables[name];
+        if (!result)
+        {
+            result = this.variables[name] = new Variable(this, name, this.memCounter++);
+        }
+        return result;
     }
 
     window.simpleCompiler = SimpleCompiler;
